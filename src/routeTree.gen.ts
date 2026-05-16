@@ -12,9 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppVerifikationerRouteImport } from './routes/_app.verifikationer'
+import { Route as AppRapporterRouteImport } from './routes/_app.rapporter'
 import { Route as AppKvittonRouteImport } from './routes/_app.kvitton'
 import { Route as AppKontonRouteImport } from './routes/_app.konton'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppAnvandareRouteImport } from './routes/_app.anvandare'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -29,6 +32,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppVerifikationerRoute = AppVerifikationerRouteImport.update({
+  id: '/verifikationer',
+  path: '/verifikationer',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRapporterRoute = AppRapporterRouteImport.update({
+  id: '/rapporter',
+  path: '/rapporter',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppKvittonRoute = AppKvittonRouteImport.update({
   id: '/kvitton',
@@ -45,43 +58,76 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnvandareRoute = AppAnvandareRouteImport.update({
+  id: '/anvandare',
+  path: '/anvandare',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/anvandare': typeof AppAnvandareRoute
   '/dashboard': typeof AppDashboardRoute
   '/konton': typeof AppKontonRoute
   '/kvitton': typeof AppKvittonRoute
+  '/rapporter': typeof AppRapporterRoute
+  '/verifikationer': typeof AppVerifikationerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/anvandare': typeof AppAnvandareRoute
   '/dashboard': typeof AppDashboardRoute
   '/konton': typeof AppKontonRoute
   '/kvitton': typeof AppKvittonRoute
+  '/rapporter': typeof AppRapporterRoute
+  '/verifikationer': typeof AppVerifikationerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/anvandare': typeof AppAnvandareRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/konton': typeof AppKontonRoute
   '/_app/kvitton': typeof AppKvittonRoute
+  '/_app/rapporter': typeof AppRapporterRoute
+  '/_app/verifikationer': typeof AppVerifikationerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/konton' | '/kvitton'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/anvandare'
+    | '/dashboard'
+    | '/konton'
+    | '/kvitton'
+    | '/rapporter'
+    | '/verifikationer'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/konton' | '/kvitton'
+  to:
+    | '/'
+    | '/login'
+    | '/anvandare'
+    | '/dashboard'
+    | '/konton'
+    | '/kvitton'
+    | '/rapporter'
+    | '/verifikationer'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/anvandare'
     | '/_app/dashboard'
     | '/_app/konton'
     | '/_app/kvitton'
+    | '/_app/rapporter'
+    | '/_app/verifikationer'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -113,6 +159,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/verifikationer': {
+      id: '/_app/verifikationer'
+      path: '/verifikationer'
+      fullPath: '/verifikationer'
+      preLoaderRoute: typeof AppVerifikationerRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/rapporter': {
+      id: '/_app/rapporter'
+      path: '/rapporter'
+      fullPath: '/rapporter'
+      preLoaderRoute: typeof AppRapporterRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/kvitton': {
       id: '/_app/kvitton'
       path: '/kvitton'
@@ -134,19 +194,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/anvandare': {
+      id: '/_app/anvandare'
+      path: '/anvandare'
+      fullPath: '/anvandare'
+      preLoaderRoute: typeof AppAnvandareRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAnvandareRoute: typeof AppAnvandareRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppKontonRoute: typeof AppKontonRoute
   AppKvittonRoute: typeof AppKvittonRoute
+  AppRapporterRoute: typeof AppRapporterRoute
+  AppVerifikationerRoute: typeof AppVerifikationerRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAnvandareRoute: AppAnvandareRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppKontonRoute: AppKontonRoute,
   AppKvittonRoute: AppKvittonRoute,
+  AppRapporterRoute: AppRapporterRoute,
+  AppVerifikationerRoute: AppVerifikationerRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
