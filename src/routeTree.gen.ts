@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppKvittonRouteImport } from './routes/_app.kvitton'
 import { Route as AppKontonRouteImport } from './routes/_app.konton'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppKvittonRoute = AppKvittonRouteImport.update({
+  id: '/kvitton',
+  path: '/kvitton',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppKontonRoute = AppKontonRouteImport.update({
   id: '/konton',
   path: '/konton',
@@ -45,12 +51,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/konton': typeof AppKontonRoute
+  '/kvitton': typeof AppKvittonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/konton': typeof AppKontonRoute
+  '/kvitton': typeof AppKvittonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,13 +67,21 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/konton': typeof AppKontonRoute
+  '/_app/kvitton': typeof AppKvittonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/konton'
+  fullPaths: '/' | '/login' | '/dashboard' | '/konton' | '/kvitton'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/konton'
-  id: '__root__' | '/' | '/_app' | '/login' | '/_app/dashboard' | '/_app/konton'
+  to: '/' | '/login' | '/dashboard' | '/konton' | '/kvitton'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/login'
+    | '/_app/dashboard'
+    | '/_app/konton'
+    | '/_app/kvitton'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -97,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/kvitton': {
+      id: '/_app/kvitton'
+      path: '/kvitton'
+      fullPath: '/kvitton'
+      preLoaderRoute: typeof AppKvittonRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/konton': {
       id: '/_app/konton'
       path: '/konton'
@@ -117,11 +140,13 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppKontonRoute: typeof AppKontonRoute
+  AppKvittonRoute: typeof AppKvittonRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppKontonRoute: AppKontonRoute,
+  AppKvittonRoute: AppKvittonRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
