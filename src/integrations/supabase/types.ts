@@ -14,16 +14,241 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      accounts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          number: number
+          type: Database["public"]["Enums"]["account_type"]
+          vat_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          number: number
+          type: Database["public"]["Enums"]["account_type"]
+          vat_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          number?: number
+          type?: Database["public"]["Enums"]["account_type"]
+          vat_rate?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      receipts: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          image_path: string | null
+          notes: string | null
+          receipt_date: string | null
+          status: string
+          total_amount: number | null
+          updated_at: string
+          uploaded_by: string | null
+          vat_amount: number | null
+          vendor: string | null
+          verification_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          image_path?: string | null
+          notes?: string | null
+          receipt_date?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+          vat_amount?: number | null
+          vendor?: string | null
+          verification_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          image_path?: string | null
+          notes?: string | null
+          receipt_date?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+          vat_amount?: number | null
+          vendor?: string | null
+          verification_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "verifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verification_lines: {
+        Row: {
+          account_number: number
+          credit: number
+          debit: number
+          description: string | null
+          id: string
+          line_order: number
+          verification_id: string
+        }
+        Insert: {
+          account_number: number
+          credit?: number
+          debit?: number
+          description?: string | null
+          id?: string
+          line_order?: number
+          verification_id: string
+        }
+        Update: {
+          account_number?: number
+          credit?: number
+          debit?: number
+          description?: string | null
+          id?: string
+          line_order?: number
+          verification_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_lines_account_number_fkey"
+            columns: ["account_number"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["number"]
+          },
+          {
+            foreignKeyName: "verification_lines_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "verifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          fiscal_year: number
+          id: string
+          number: number
+          series: string
+          updated_at: string
+          verification_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          fiscal_year: number
+          id?: string
+          number: number
+          series?: string
+          updated_at?: string
+          verification_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          fiscal_year?: number
+          id?: string
+          number?: number
+          series?: string
+          updated_at?: string
+          verification_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_type: "asset" | "liability" | "equity" | "income" | "expense"
+      app_role: "admin" | "accountant" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +375,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_type: ["asset", "liability", "equity", "income", "expense"],
+      app_role: ["admin", "accountant", "viewer"],
+    },
   },
 } as const
