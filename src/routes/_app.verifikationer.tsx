@@ -344,10 +344,25 @@ function BankImport({ onDone }: { onDone: () => void }) {
     }
   };
 
+  const [dragOver, setDragOver] = useState(false);
+
   if (txs.length === 0) {
     return (
       <div className="py-8">
-        <label className="block border-2 border-dashed rounded-lg p-10 text-center cursor-pointer hover:bg-muted/30">
+        <label
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f && f.type === "application/pdf") onFile(f);
+            else if (f) toast.error("Endast PDF-filer stöds.");
+          }}
+          className={`block border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+            dragOver ? "border-primary bg-primary/5" : "hover:bg-muted/30"
+          }`}
+        >
           <input type="file" accept="application/pdf" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
           {loading ? (
