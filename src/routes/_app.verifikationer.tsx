@@ -47,17 +47,26 @@ function VerifPage() {
     <>
       <PageHeader title="Verifikationer" description="Bokföringsposter med dubbel bokföring (debet/kredit)">
         {canEdit && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-1.5" /> Ny verifikation</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Ny verifikation</DialogTitle>
-              </DialogHeader>
-              <NewVerification onDone={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["verifications"] }); }} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Dialog open={bankOpen} onOpenChange={setBankOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline"><FileUp className="h-4 w-4 mr-1.5" /> Importera bankutdrag (PDF)</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader><DialogTitle>Importera bankutdrag</DialogTitle></DialogHeader>
+                <BankImport onDone={() => { setBankOpen(false); qc.invalidateQueries({ queryKey: ["verifications"] }); }} />
+              </DialogContent>
+            </Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="h-4 w-4 mr-1.5" /> Ny verifikation</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader><DialogTitle>Ny verifikation</DialogTitle></DialogHeader>
+                <NewVerification onDone={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["verifications"] }); }} />
+              </DialogContent>
+            </Dialog>
+          </div>
         )}
       </PageHeader>
 
