@@ -44,6 +44,15 @@ export function suggestSplits(amount: number, limit = 8): Split[] {
 
   recurse(0, target);
 
+  // Regel: barn kan inte komma ensamma — food_child kräver minst en food_adult.
+  const filtered = results.filter((s) => {
+    const child = s.food_child ?? 0;
+    const adult = s.food_adult ?? 0;
+    return child === 0 || adult >= 1;
+  });
+  results.length = 0;
+  results.push(...filtered);
+
   // Sortera: föredra färre olika poster, sedan färre totala enheter,
   // sedan föredra medlemsavgift > mat > AI.
   const priority: FeeKey[] = ["member_family", "member_person", "food_adult", "food_child", "ai_lecture"];
