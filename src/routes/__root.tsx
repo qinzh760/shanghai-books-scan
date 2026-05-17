@@ -76,11 +76,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "SAS Bokföring – Shanghai Association Sweden" },
       { name: "description", content: "Bokföringssystem för Shanghai Association Sweden." },
       { name: "author", content: "Shanghai Association Sweden" },
-      { property: "og:title", content: "SAS Bokföring" },
+      { property: "og:title", content: "SAS Bokföring – Shanghai Association Sweden" },
       { property: "og:description", content: "Bokföringssystem för Shanghai Association Sweden." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "SAS Bokföring – Shanghai Association Sweden" },
+      { name: "twitter:description", content: "Bokföringssystem för Shanghai Association Sweden." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bb06c6d4-61fb-4dfb-8c44-966aeb0ad135/id-preview-61283390--5aeb3f9f-fa9c-4fea-90db-4b385ee586bb.lovable.app-1778947612475.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bb06c6d4-61fb-4dfb-8c44-966aeb0ad135/id-preview-61283390--5aeb3f9f-fa9c-4fea-90db-4b385ee586bb.lovable.app-1778947612475.png" },
     ],
     links: [
       {
