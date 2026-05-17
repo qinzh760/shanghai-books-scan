@@ -10,10 +10,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, FileUp, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { parseBankPdf, type BankTransaction } from "@/lib/bank.functions";
+import { FEES, BANK_ACCOUNT, suggestSplits, splitTotal, describeSplit, type FeeKey, type Split } from "@/lib/fees";
 
 export const Route = createFileRoute("/_app/verifikationer")({
   component: VerifPage,
