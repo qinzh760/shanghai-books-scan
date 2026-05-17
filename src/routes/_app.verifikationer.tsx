@@ -28,6 +28,7 @@ function VerifPage() {
   const qc = useQueryClient();
   const { canEdit } = useAuth();
   const [open, setOpen] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
 
   const { data: list } = useQuery({
     queryKey: ["verifications"],
