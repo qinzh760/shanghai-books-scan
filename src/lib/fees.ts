@@ -45,10 +45,15 @@ export function suggestSplits(amount: number, limit = 8): Split[] {
   recurse(0, target);
 
   // Regel: barn kan inte komma ensamma — food_child kräver minst en food_adult.
+  // Undantag: exakt 1× food_child ensamt (125 kr) tillåts.
   const filtered = results.filter((s) => {
     const child = s.food_child ?? 0;
     const adult = s.food_adult ?? 0;
-    return child === 0 || adult >= 1;
+    if (child === 0) return true;
+    if (adult >= 1) return true;
+    // Endast tillåtet: precis 1 barn och inget annat
+    const otherKeys = (Object.keys(s) as FeeKey[]).filter((k) => k !== "food_child");
+    return child === 1 && otherKeys.length === 0;
   });
   results.length = 0;
   results.push(...filtered);
