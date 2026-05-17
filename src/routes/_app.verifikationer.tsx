@@ -373,7 +373,7 @@ function BankImport({ onDone }: { onDone: () => void }) {
           ) : (
             <div className="space-y-1.5">
               <FileUp className="h-8 w-8 mx-auto text-muted-foreground" />
-              <div className="font-medium">Välj PDF-fil med bankutdrag</div>
+              <div className="font-medium">{dragOver ? "Släpp PDF här" : "Dra & släpp PDF eller klicka för att välja"}</div>
               <div className="text-xs text-muted-foreground">AI extraherar transaktioner och föreslår uppdelning enligt avgiftstabellen</div>
             </div>
           )}
