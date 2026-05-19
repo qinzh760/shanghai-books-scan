@@ -7,6 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { FileSpreadsheet, FileText } from "lucide-react";
+import { exportReportToExcel, exportReportToPdf, type ExportReport } from "@/lib/report-export";
 
 export const Route = createFileRoute("/_app/rapporter")({
   component: RapporterPage,
@@ -38,17 +41,32 @@ function RapporterPage() {
   });
 
   const grouped = groupByAccount(data ?? []);
+  const [tab, setTab] = useState("result");
+  const period = `${from}__${to}`;
+
+  const reports: Record<string, ExportReport> = {
+    result: buildResultReport(grouped, period),
+    balance: buildBalanceReport(grouped, period),
+    vat: buildVatReport(grouped, period),
+    tax: buildTaxReport(grouped, period),
+  };
 
   return (
     <>
-      <PageHeader title="Rapporter" description="Resultaträkning, balansräkning och momsrapport.">
-        <div className="flex gap-2 items-end">
+      <PageHeader title="Rapporter" description="Resultaträkning, balansräkning, momsrapport och skattedeklaration.">
+        <div className="flex gap-2 items-end flex-wrap">
           <div><Label className="text-xs">Från</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label className="text-xs">Till</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <Button variant="outline" size="sm" onClick={() => exportReportToExcel(reports[tab])}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => exportReportToPdf(reports[tab])}>
+            <FileText className="h-4 w-4 mr-1" /> PDF
+          </Button>
         </div>
       </PageHeader>
 
-      <Tabs defaultValue="result">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="result">Resultaträkning</TabsTrigger>
           <TabsTrigger value="balance">Balansräkning</TabsTrigger>
@@ -56,21 +74,87 @@ function RapporterPage() {
           <TabsTrigger value="tax">Skattedeklaration</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="result">
-          <ResultReport rows={grouped} />
-        </TabsContent>
-        <TabsContent value="balance">
-          <BalanceReport rows={grouped} />
-        </TabsContent>
-        <TabsContent value="vat">
-          <VatReport rows={grouped} />
-        </TabsContent>
-        <TabsContent value="tax">
-          <TaxReport rows={grouped} />
-        </TabsContent>
+        <TabsContent value="result"><ResultReport rows={grouped} /></TabsContent>
+        <TabsContent value="balance"><BalanceReport rows={grouped} /></TabsContent>
+        <TabsContent value="vat"><VatReport rows={grouped} /></TabsContent>
+        <TabsContent value="tax"><TaxReport rows={grouped} /></TabsContent>
       </Tabs>
     </>
   );
+}
+
+function buildResultReport(rows: Agg[], period: string): ExportReport {
+  const income = rows.filter((r) => r.type === "income");
+  const expense = rows.filter((r) => r.type === "expense");
+  const incomeSum = income.reduce((s, r) => s + (r.credit - r.debit), 0);
+  const expenseSum = expense.reduce((s, r) => s + (r.debit - r.credit), 0);
+  return {
+    title: "Resultatrakning",
+    period,
+    sections: [
+      { title: "Intäkter", rows: income.map((r) => ({ number: r.number, name: r.name, amount: r.credit - r.debit })), total: incomeSum },
+      { title: "Kostnader", rows: expense.map((r) => ({ number: r.number, name: r.name, amount: r.debit - r.credit })), total: expenseSum },
+    ],
+    footer: { label: "Årets resultat", amount: incomeSum - expenseSum },
+  };
+}
+
+function buildBalanceReport(rows: Agg[], period: string): ExportReport {
+  const assets = rows.filter((r) => r.type === "asset");
+  const liabilities = rows.filter((r) => r.type === "liability");
+  const equity = rows.filter((r) => r.type === "equity");
+  return {
+    title: "Balansrakning",
+    period,
+    sections: [
+      { title: "Tillgångar", rows: assets.map((r) => ({ number: r.number, name: r.name, amount: r.debit - r.credit })), total: assets.reduce((s, r) => s + (r.debit - r.credit), 0) },
+      { title: "Skulder", rows: liabilities.map((r) => ({ number: r.number, name: r.name, amount: r.credit - r.debit })), total: liabilities.reduce((s, r) => s + (r.credit - r.debit), 0) },
+      { title: "Eget kapital", rows: equity.map((r) => ({ number: r.number, name: r.name, amount: r.credit - r.debit })), total: equity.reduce((s, r) => s + (r.credit - r.debit), 0) },
+    ],
+  };
+}
+
+function buildVatReport(rows: Agg[], period: string): ExportReport {
+  const outgoing = rows.filter((r) => r.number >= 2610 && r.number < 2640);
+  const incoming = rows.filter((r) => r.number >= 2640 && r.number < 2650);
+  const outSum = outgoing.reduce((s, r) => s + (r.credit - r.debit), 0);
+  const inSum = incoming.reduce((s, r) => s + (r.debit - r.credit), 0);
+  return {
+    title: "Momsrapport",
+    period,
+    sections: [
+      { title: "Utgående moms", rows: outgoing.map((r) => ({ number: r.number, name: r.name, amount: r.credit - r.debit })), total: outSum },
+      { title: "Ingående moms", rows: incoming.map((r) => ({ number: r.number, name: r.name, amount: r.debit - r.credit })), total: inSum },
+    ],
+    footer: { label: "Moms att betala", amount: outSum - inSum },
+  };
+}
+
+function buildTaxReport(rows: Agg[], period: string): ExportReport {
+  const inc = (r: Agg) => r.credit - r.debit;
+  const exp = (r: Agg) => r.debit - r.credit;
+  const b41 = rows.filter((r) => r.number === 3610 || r.number === 3620);
+  const b45 = rows.filter((r) => r.type === "income" && r.number !== 3610 && r.number !== 3620);
+  const b47 = rows.filter((r) => r.number >= 4000 && r.number < 5000);
+  const b49 = rows.filter((r) => r.number === 6570 || (r.number >= 8000 && r.number < 9000));
+  const b411 = rows.filter((r) => r.type === "expense" && !(r.number >= 4000 && r.number < 5000) && r.number !== 6570);
+  const s41 = b41.reduce((s, r) => s + inc(r), 0);
+  const s45 = b45.reduce((s, r) => s + inc(r), 0);
+  const s47 = b47.reduce((s, r) => s + exp(r), 0);
+  const s49 = b49.reduce((s, r) => s + exp(r), 0);
+  const s411 = b411.reduce((s, r) => s + exp(r), 0);
+  return {
+    title: "Skattedeklaration",
+    period,
+    sections: [
+      { title: "4.1 Medlemsavgifter", rows: b41.map((r) => ({ number: r.number, name: r.name, amount: inc(r) })), total: s41 },
+      { title: "4.5 Övriga rörelseintäkter", rows: b45.map((r) => ({ number: r.number, name: r.name, amount: inc(r) })), total: s45 },
+      { title: "4.7 Kostnader medlemsverksamhet", rows: b47.map((r) => ({ number: r.number, name: r.name, amount: exp(r) })), total: s47 },
+      { title: "4.9 Räntor och kapitalförvaltning", rows: b49.map((r) => ({ number: r.number, name: r.name, amount: exp(r) })), total: s49 },
+      { title: "4.11 Övriga rörelsekostnader", rows: b411.map((r) => ({ number: r.number, name: r.name, amount: exp(r) })), total: s411 },
+    ],
+    footer: { label: "Årets resultat", amount: s41 + s45 - s47 - s49 - s411 },
+  };
 }
 
 type Agg = { number: number; name: string; type: string; debit: number; credit: number };
