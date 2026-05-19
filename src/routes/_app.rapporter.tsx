@@ -156,6 +156,54 @@ function VatReport({ rows }: { rows: Agg[] }) {
   );
 }
 
+function TaxReport({ rows }: { rows: Agg[] }) {
+  // Inkomstdeklaration 3 (ideell förening) – mappning baserad på BAS-konton.
+  // 4.1 Medlemsavgifter: 3610, 3620
+  // 4.5 Övriga rörelseintäkter: övriga intäktskonton (3xxx)
+  // 4.7 Kostnader medlemsverksamhet: 4xxx
+  // 4.9 Räntor och kapitalförvaltning: 6570 (samt 8xxx finansiella)
+  // 4.11 Övriga rörelsekostnader: övriga kostnadskonton
+  const inc = (r: Agg) => r.credit - r.debit;
+  const exp = (r: Agg) => r.debit - r.credit;
+
+  const b41 = rows.filter((r) => r.number === 3610 || r.number === 3620);
+  const b45 = rows.filter((r) => r.type === "income" && r.number !== 3610 && r.number !== 3620);
+  const b47 = rows.filter((r) => r.number >= 4000 && r.number < 5000);
+  const b49 = rows.filter((r) => r.number === 6570 || (r.number >= 8000 && r.number < 9000));
+  const b411 = rows.filter(
+    (r) =>
+      r.type === "expense" &&
+      !(r.number >= 4000 && r.number < 5000) &&
+      r.number !== 6570,
+  );
+
+  const s41 = b41.reduce((s, r) => s + inc(r), 0);
+  const s45 = b45.reduce((s, r) => s + inc(r), 0);
+  const s47 = b47.reduce((s, r) => s + exp(r), 0);
+  const s49 = b49.reduce((s, r) => s + exp(r), 0);
+  const s411 = b411.reduce((s, r) => s + exp(r), 0);
+  const result = s41 + s45 - s47 - s49 - s411;
+
+  return (
+    <Card className="mt-4">
+      <CardHeader><CardTitle>Skattedeklaration – Inkomstdeklaration 3</CardTitle></CardHeader>
+      <CardContent>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Intäkter</div>
+        <Section title="4.1 Medlemsavgifter" rows={b41.map((r) => ({ ...r, amount: inc(r) }))} total={s41} />
+        <Section title="4.5 Övriga rörelseintäkter" rows={b45.map((r) => ({ ...r, amount: inc(r) }))} total={s45} />
+        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2 mt-4">Kostnader</div>
+        <Section title="4.7 Kostnader medlemsverksamhet" rows={b47.map((r) => ({ ...r, amount: exp(r) }))} total={s47} />
+        <Section title="4.9 Räntor och kapitalförvaltning" rows={b49.map((r) => ({ ...r, amount: exp(r) }))} total={s49} />
+        <Section title="4.11 Övriga rörelsekostnader" rows={b411.map((r) => ({ ...r, amount: exp(r) }))} total={s411} />
+        <div className="mt-4 pt-3 border-t flex justify-between text-base font-semibold">
+          <span>Årets resultat</span>
+          <span className={`tabular-nums ${result >= 0 ? "text-success" : "text-destructive"}`}>{formatSEK(result)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function Section({
   title,
   rows,
