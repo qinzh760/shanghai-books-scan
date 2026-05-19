@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { parseBankPdf, type BankTransaction } from "@/lib/bank.functions";
 import { FEES, BANK_ACCOUNT, suggestSplits, splitTotal, describeSplit, type FeeKey, type Split } from "@/lib/fees";
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 
 export const Route = createFileRoute("/_app/verifikationer")({
   component: VerifPage,
