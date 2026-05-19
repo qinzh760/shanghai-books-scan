@@ -430,25 +430,29 @@ function BankImport({ onDone }: { onDone: () => void }) {
             e.preventDefault();
             setDragOver(false);
             const f = e.dataTransfer.files?.[0];
-            if (f && f.type === "application/pdf") onFile(f);
-            else if (f) toast.error("Endast PDF-filer stöds.");
+            if (!f) return;
+            const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+            const isExcel = /\.(xlsx|xls)$/i.test(f.name) ||
+              f.type.includes("spreadsheet") || f.type.includes("excel");
+            if (isPdf || isExcel) onFile(f);
+            else toast.error("Endast PDF- eller Excel-filer (.xlsx, .xls) stöds.");
           }}
           className={`block border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
             dragOver ? "border-primary bg-primary/5" : "hover:bg-muted/30"
           }`}
         >
-          <input type="file" accept="application/pdf" className="hidden"
+          <input type="file" accept="application/pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
           {loading ? (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <div>Läser bankutdraget…</div>
+              <div>Läser filen…</div>
             </div>
           ) : (
             <div className="space-y-1.5">
               <FileUp className="h-8 w-8 mx-auto text-muted-foreground" />
-              <div className="font-medium">{dragOver ? "Släpp PDF här" : "Dra & släpp PDF eller klicka för att välja"}</div>
-              <div className="text-xs text-muted-foreground">AI extraherar transaktioner och föreslår uppdelning enligt avgiftstabellen</div>
+              <div className="font-medium">{dragOver ? "Släpp filen här" : "Dra & släpp PDF eller Excel – eller klicka för att välja"}</div>
+              <div className="text-xs text-muted-foreground">PDF tolkas av AI · Excel läses direkt (kolumner: datum & belopp, ev. text/avsändare)</div>
             </div>
           )}
         </label>
