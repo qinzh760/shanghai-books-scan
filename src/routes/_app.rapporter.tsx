@@ -58,12 +58,21 @@ function RapporterPage() {
         <div className="flex gap-2 items-end flex-wrap">
           <div><Label className="text-xs">Från</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label className="text-xs">Till</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <Button variant="outline" size="sm" onClick={() => exportReportToExcel(reports[tab])}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => exportReportToPdf(reports[tab])}>
-            <FileText className="h-4 w-4 mr-1" /> PDF
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" /> Exportera <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportReportToExcel(reports[tab])}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportReportToPdf(reports[tab])}>
+                <FileText className="h-4 w-4 mr-2" /> PDF (.pdf)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </PageHeader>
 
