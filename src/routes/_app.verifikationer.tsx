@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { parseBankPdf, type BankTransaction } from "@/lib/bank.functions";
 import { FEES, BANK_ACCOUNT, suggestSplits, splitTotal, describeSplit, type FeeKey, type Split } from "@/lib/fees";
+import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/_app/verifikationer")({
   component: VerifPage,
@@ -50,7 +51,7 @@ function VerifPage() {
           <div className="flex gap-2">
             <Dialog open={bankOpen} onOpenChange={setBankOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline"><FileUp className="h-4 w-4 mr-1.5" /> Importera bankutdrag (PDF)</Button>
+                <Button variant="outline"><FileUp className="h-4 w-4 mr-1.5" /> Importera bankutdrag (PDF / Excel)</Button>
               </DialogTrigger>
               <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Importera bankutdrag</DialogTitle></DialogHeader>
@@ -256,38 +257,111 @@ type ParsedTx = BankTransaction & {
   description: string;
 };
 
+function parseExcelTransactions(rows: unknown[][]): BankTransaction[] {
+  // Hitta header-rad
+  const norm = (s: unknown) => String(s ?? "").toLowerCase().trim();
+  let headerIdx = -1;
+  let dateCol = -1, amountCol = -1, descCol = -1, counterCol = -1;
+  for (let r = 0; r < Math.min(rows.length, 20); r++) {
+    const row = rows[r] ?? [];
+    const cols = row.map(norm);
+    const d = cols.findIndex((c) => /datum|date|bokf/i.test(c));
+    const a = cols.findIndex((c) => /belopp|amount|summa|sek|kr/i.test(c));
+    if (d >= 0 && a >= 0) {
+      headerIdx = r; dateCol = d; amountCol = a;
+      descCol = cols.findIndex((c) => /text|beskrivning|description|meddelande|referens/i.test(c));
+      counterCol = cols.findIndex((c) => /avsändare|mottagare|motpart|namn|counterparty|från|till/i.test(c));
+      break;
+    }
+  }
+  if (headerIdx < 0) return [];
+
+  const toDate = (v: unknown): string => {
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    if (typeof v === "number") {
+      const d = XLSX.SSF.parse_date_code(v);
+      if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+    }
+    const s = String(v ?? "").trim();
+    const m = s.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/) ?? s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+    if (m) {
+      const [y, mo, d] = m[0].includes("-") || m[1].length === 4
+        ? [m[1], m[2], m[3]]
+        : [m[3], m[2], m[1]];
+      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+    return "";
+  };
+  const toAmount = (v: unknown): number => {
+    if (typeof v === "number") return v;
+    const s = String(v ?? "").replace(/\s/g, "").replace(/kr|sek/gi, "").replace(",", ".");
+    const n = Number(s);
+    return Number.isNaN(n) ? 0 : n;
+  };
+
+  const out: BankTransaction[] = [];
+  for (let r = headerIdx + 1; r < rows.length; r++) {
+    const row = rows[r] ?? [];
+    const date = toDate(row[dateCol]);
+    const amount = toAmount(row[amountCol]);
+    if (!date || !amount) continue;
+    out.push({
+      date,
+      amount,
+      description: descCol >= 0 ? String(row[descCol] ?? "") : "",
+      counterparty: counterCol >= 0 ? String(row[counterCol] ?? "") || null : null,
+    });
+  }
+  return out;
+}
+
 function BankImport({ onDone }: { onDone: () => void }) {
   const parsePdf = useServerFn(parseBankPdf);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [txs, setTxs] = useState<ParsedTx[]>([]);
 
+  const buildParsed = (incoming: BankTransaction[]) => {
+    const parsed: ParsedTx[] = incoming.map((t) => {
+      const candidates = suggestSplits(t.amount);
+      return {
+        ...t,
+        selected: candidates.length > 0,
+        split: candidates[0] ?? {},
+        candidates,
+        description: t.counterparty
+          ? `Inbet. ${t.counterparty}`
+          : t.description || "Inbetalning",
+      };
+    });
+    setTxs(parsed);
+    const matched = parsed.filter((t) => t.candidates.length > 0).length;
+    toast.success(`${incoming.length} insättningar – ${matched} matchade.`);
+  };
+
   const onFile = async (file: File) => {
     setLoading(true);
     try {
-      const buf = await file.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
-      const res = await parsePdf({ data: { pdfBase64: base64 } });
-      if (!res.ok) { toast.error(res.error); return; }
-      const incoming = res.transactions.filter((t) => t.amount > 0);
-      const parsed: ParsedTx[] = incoming.map((t) => {
-        const candidates = suggestSplits(t.amount);
-        return {
-          ...t,
-          selected: candidates.length > 0,
-          split: candidates[0] ?? {},
-          candidates,
-          description: t.counterparty
-            ? `Inbet. ${t.counterparty}`
-            : t.description || "Inbetalning",
-        };
-      });
-      setTxs(parsed);
-      const matched = parsed.filter((t) => t.candidates.length > 0).length;
-      toast.success(`${res.transactions.length} transaktioner – ${incoming.length} insättningar, ${matched} matchade.`);
+      const isExcel = /\.(xlsx|xls)$/i.test(file.name) ||
+        file.type.includes("spreadsheet") || file.type.includes("excel");
+      if (isExcel) {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array", cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: true });
+        const all = parseExcelTransactions(rows);
+        if (all.length === 0) { toast.error("Hittade inga transaktioner. Kontrollera att filen har kolumner för datum och belopp."); return; }
+        buildParsed(all.filter((t) => t.amount > 0));
+      } else {
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const base64 = btoa(binary);
+        const res = await parsePdf({ data: { pdfBase64: base64 } });
+        if (!res.ok) { toast.error(res.error); return; }
+        buildParsed(res.transactions.filter((t) => t.amount > 0));
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -356,25 +430,29 @@ function BankImport({ onDone }: { onDone: () => void }) {
             e.preventDefault();
             setDragOver(false);
             const f = e.dataTransfer.files?.[0];
-            if (f && f.type === "application/pdf") onFile(f);
-            else if (f) toast.error("Endast PDF-filer stöds.");
+            if (!f) return;
+            const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+            const isExcel = /\.(xlsx|xls)$/i.test(f.name) ||
+              f.type.includes("spreadsheet") || f.type.includes("excel");
+            if (isPdf || isExcel) onFile(f);
+            else toast.error("Endast PDF- eller Excel-filer (.xlsx, .xls) stöds.");
           }}
           className={`block border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
             dragOver ? "border-primary bg-primary/5" : "hover:bg-muted/30"
           }`}
         >
-          <input type="file" accept="application/pdf" className="hidden"
+          <input type="file" accept="application/pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
           {loading ? (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <div>Läser bankutdraget…</div>
+              <div>Läser filen…</div>
             </div>
           ) : (
             <div className="space-y-1.5">
               <FileUp className="h-8 w-8 mx-auto text-muted-foreground" />
-              <div className="font-medium">{dragOver ? "Släpp PDF här" : "Dra & släpp PDF eller klicka för att välja"}</div>
-              <div className="text-xs text-muted-foreground">AI extraherar transaktioner och föreslår uppdelning enligt avgiftstabellen</div>
+              <div className="font-medium">{dragOver ? "Släpp filen här" : "Dra & släpp PDF eller Excel – eller klicka för att välja"}</div>
+              <div className="text-xs text-muted-foreground">PDF tolkas av AI · Excel läses direkt (kolumner: datum & belopp, ev. text/avsändare)</div>
             </div>
           )}
         </label>
