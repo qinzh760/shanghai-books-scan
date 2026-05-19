@@ -8,7 +8,8 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { FileSpreadsheet, FileText } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Download, FileSpreadsheet, FileText, ChevronDown } from "lucide-react";
 import { exportReportToExcel, exportReportToPdf, type ExportReport } from "@/lib/report-export";
 
 export const Route = createFileRoute("/_app/rapporter")({
