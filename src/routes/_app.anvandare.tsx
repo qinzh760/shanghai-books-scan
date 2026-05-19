@@ -31,7 +31,7 @@ function UsersPage() {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, created_at, approval_status" as string)
+        .select("id, full_name, email, created_at, approval_status")
         .order("created_at", { ascending: false });
       if (error) throw error;
       const { data: roles } = await supabase.from("user_roles").select("user_id, role");
@@ -41,9 +41,10 @@ function UsersPage() {
         arr.push(r.role as AppRole);
         map.set(r.user_id, arr);
       }
-      return (profiles ?? []).map((p) => ({
-        ...(p as { id: string; full_name: string | null; email: string | null; approval_status?: ApprovalStatus }),
-        roles: map.get((p as { id: string }).id) ?? [],
+      type Row = { id: string; full_name: string | null; email: string | null; approval_status?: ApprovalStatus };
+      return ((profiles ?? []) as unknown as Row[]).map((p) => ({
+        ...p,
+        roles: map.get(p.id) ?? [],
       }));
     },
     enabled: !!isAdmin,
