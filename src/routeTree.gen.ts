@@ -18,6 +18,7 @@ import { Route as AppKvittonRouteImport } from './routes/_app.kvitton'
 import { Route as AppKontonRouteImport } from './routes/_app.konton'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAnvandareRouteImport } from './routes/_app.anvandare'
+import { Route as ApiPublicNotifySignupRouteImport } from './routes/api/public/notify-signup'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -63,6 +64,11 @@ const AppAnvandareRoute = AppAnvandareRouteImport.update({
   path: '/anvandare',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicNotifySignupRoute = ApiPublicNotifySignupRouteImport.update({
+  id: '/api/public/notify-signup',
+  path: '/api/public/notify-signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/kvitton': typeof AppKvittonRoute
   '/rapporter': typeof AppRapporterRoute
   '/verifikationer': typeof AppVerifikationerRoute
+  '/api/public/notify-signup': typeof ApiPublicNotifySignupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/kvitton': typeof AppKvittonRoute
   '/rapporter': typeof AppRapporterRoute
   '/verifikationer': typeof AppVerifikationerRoute
+  '/api/public/notify-signup': typeof ApiPublicNotifySignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_app/kvitton': typeof AppKvittonRoute
   '/_app/rapporter': typeof AppRapporterRoute
   '/_app/verifikationer': typeof AppVerifikationerRoute
+  '/api/public/notify-signup': typeof ApiPublicNotifySignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/kvitton'
     | '/rapporter'
     | '/verifikationer'
+    | '/api/public/notify-signup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/kvitton'
     | '/rapporter'
     | '/verifikationer'
+    | '/api/public/notify-signup'
   id:
     | '__root__'
     | '/'
@@ -128,12 +139,14 @@ export interface FileRouteTypes {
     | '/_app/kvitton'
     | '/_app/rapporter'
     | '/_app/verifikationer'
+    | '/api/public/notify-signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicNotifySignupRoute: typeof ApiPublicNotifySignupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnvandareRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/notify-signup': {
+      id: '/api/public/notify-signup'
+      path: '/api/public/notify-signup'
+      fullPath: '/api/public/notify-signup'
+      preLoaderRoute: typeof ApiPublicNotifySignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -228,7 +248,18 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicNotifySignupRoute: ApiPublicNotifySignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
