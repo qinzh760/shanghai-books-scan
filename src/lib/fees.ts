@@ -1,15 +1,25 @@
 // Avgiftstabell för Shanghai Association Sweden
-export type FeeKey = "member_person" | "member_family" | "food_adult" | "food_child" | "ai_lecture";
+export type FeeKey =
+  | "member_person"
+  | "member_family"
+  | "food_adult"
+  | "food_child"
+  | "spring_dinner"
+  | "ai_activity"
+  | "lecture";
 
 export const FEES: Record<FeeKey, { label: string; price: number; account: number }> = {
-  member_person: { label: "Medlemsavgift person", price: 150, account: 3601 },
-  member_family: { label: "Medlemsavgift familj", price: 300, account: 3602 },
-  food_adult:    { label: "Mat vuxen",            price: 250, account: 3740 },
-  food_child:    { label: "Mat barn",             price: 125, account: 3741 },
-  ai_lecture:    { label: "AI-föreläsning",       price:  50, account: 3603 },
+  member_person:  { label: "Medlemsavgift person",  price: 150, account: 3601 },
+  member_family:  { label: "Medlemsavgift familj",  price: 300, account: 3602 },
+  food_adult:     { label: "Mat vuxen (årsmöte)",   price: 250, account: 3740 },
+  food_child:     { label: "Mat barn (årsmöte)",    price: 125, account: 3741 },
+  spring_dinner:  { label: "Vårfestmiddag",         price: 250, account: 3742 },
+  ai_activity:    { label: "AI-aktivitet",          price:  50, account: 3604 },
+  lecture:        { label: "Föreläsning",           price:  50, account: 3603 },
 };
 
 export const BANK_ACCOUNT = 1930;
+export const DONATION_ACCOUNT = 3891;
 
 export type Split = Partial<Record<FeeKey, number>>;
 
@@ -51,7 +61,6 @@ export function suggestSplits(amount: number, limit = 8): Split[] {
     const adult = s.food_adult ?? 0;
     if (child === 0) return true;
     if (adult >= 1) return true;
-    // Endast tillåtet: precis 1 barn och inget annat
     const otherKeys = (Object.keys(s) as FeeKey[]).filter((k) => k !== "food_child");
     return child === 1 && otherKeys.length === 0;
   });
@@ -59,8 +68,13 @@ export function suggestSplits(amount: number, limit = 8): Split[] {
   results.push(...filtered);
 
   // Sortera: föredra färre olika poster, sedan färre totala enheter,
-  // sedan föredra medlemsavgift > mat > AI.
-  const priority: FeeKey[] = ["member_family", "member_person", "food_adult", "food_child", "ai_lecture"];
+  // sedan föredra medlemsavgift > mat > vårfest > AI/föreläsning.
+  const priority: FeeKey[] = [
+    "member_family", "member_person",
+    "food_adult", "food_child",
+    "spring_dinner",
+    "ai_activity", "lecture",
+  ];
   results.sort((a, b) => {
     const aTypes = Object.keys(a).length;
     const bTypes = Object.keys(b).length;
