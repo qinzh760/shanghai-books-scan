@@ -53,6 +53,7 @@ function RapporterPage() {
           <TabsTrigger value="result">Resultaträkning</TabsTrigger>
           <TabsTrigger value="balance">Balansräkning</TabsTrigger>
           <TabsTrigger value="vat">Momsrapport</TabsTrigger>
+          <TabsTrigger value="tax">Skattedeklaration</TabsTrigger>
         </TabsList>
 
         <TabsContent value="result">
@@ -63,6 +64,9 @@ function RapporterPage() {
         </TabsContent>
         <TabsContent value="vat">
           <VatReport rows={grouped} />
+        </TabsContent>
+        <TabsContent value="tax">
+          <TaxReport rows={grouped} />
         </TabsContent>
       </Tabs>
     </>
