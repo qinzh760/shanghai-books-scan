@@ -30,8 +30,22 @@ function LoginPage() {
     setBusy(true);
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // Check approval status
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("approval_status")
+          .eq("id", data.user!.id)
+          .maybeSingle();
+        const status = (profile as { approval_status?: string } | null)?.approval_status;
+        if (status !== "approved") {
+          await supabase.auth.signOut();
+          if (status === "rejected") {
+            throw new Error("Ditt konto har avslagits. Kontakta administratör.");
+          }
+          throw new Error("Ditt konto väntar på godkännande av administratör.");
+        }
         toast.success("Inloggad");
         nav({ to: "/dashboard" });
       } else {
@@ -44,7 +58,17 @@ function LoginPage() {
           },
         });
         if (error) throw error;
-        toast.success("Konto skapat – kontrollera din e-post för bekräftelse.");
+        // Notify admin
+        try {
+          await fetch("/api/public/notify-signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, fullName }),
+          });
+        } catch {
+          /* non-blocking */
+        }
+        toast.success("Konto skapat – väntar på godkännande från administratör.");
         setMode("login");
       }
     } catch (err) {
